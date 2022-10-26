@@ -32,7 +32,8 @@ jobs:
       # unfortunately we can't use deploy keys because the git config dance done by webfactory/ssh-agent happens in the runner
       # not in the docker container. Instead we use an SSH key on 'gpsengine-node' user and forward the access through to the
       # docker container with ssh-agent.
-      - uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 #v0.7.0 (was v0.5.4)
+      - name: Install SSH Client
+        uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 #v0.7.0 (was v0.5.4)
         with:
             ssh-private-key: ${{ secrets.LIB_CLONE_KEY }}
       - name: Docker build
@@ -52,7 +53,7 @@ jobs:
       - build-and-push
     steps:
       - name: Install SSH Client
-      - uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 #v0.7.0 (was v0.5.4)
+        uses: webfactory/ssh-agent@836c84ec59a0e7bc0eabc79988384eb567561ee2 #v0.7.0 (was v0.5.4)
         with:
           ssh-private-key: ${{ secrets.PRODUCTION_EDIT_KEY }}
       - uses: imranismail/setup-kustomize@6691bdeb1b0a3286fb7f70fd1423c10e81e5375f #v2.0.0 (was v1)
