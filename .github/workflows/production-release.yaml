@@ -21,8 +21,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: production
     env:
-      image_url: ${{ env.HOST }}/${{ env.REPO }}/${{ inputs.app }}
+      image_url: australia-southeast1-docker.pkg.dev/armadaplatform/connect/${{ inputs.app }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -52,4 +53,33 @@ jobs:
           cache-from: type=registry,ref=${{ env.image_url }}:latest
           cache-to: type=inline
           ssh: default=${{ env.SSH_AUTH_SOCK }}
+
+  update-production:
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      - build-and-push
+    steps:
+      - name: Install SSH Client 🔑
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.PRODUCTION_EDIT_KEY }}
+      - uses: imranismail/setup-kustomize@v1
+      - run: git clone git@github.com:gpsengine/ConnectProduction.git .
+      - run: kustomize edit set image backend=${{ env.IMAGE }}:${{ github.ref_name }}
+        working-directory: ./app
+      - run: git add .
+      - run: |
+          git config user.email "buildbot@gpsengine.github.com"
+          git config user.name "$GITHUB_ACTOR"
+      - run: git commit -m "Update ${{ inputs.app }}"
+      - run: git push
+      - uses: rtCamp/action-slack-notify@v2
+        if: always()
+        env:
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: deploy
+          SLACK_TITLE: ${{ inputs.app }} Complete
+          SLACK_FOOTER: Sensium Labs
 
