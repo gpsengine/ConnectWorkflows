@@ -25,6 +25,7 @@ jobs:
         id: tag
         run: |
           echo "tag=sha-$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_OUTPUT
       - id: slack
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
         with:
@@ -34,23 +35,27 @@ jobs:
               "text": "Staging ${{ inputs.app }}...",
               "attachments": [
                 {
-                  "pretext": "Deployment started",
                   "color": "dbab09",
                   "fields": [
                     {
-                      "title": "Status",
+                      "title": "Ref",
                       "short": true,
-                      "value": "In Progress"
+                      "value": "${{ github.refs }}"
                     },
                     {
-                      "title": "Tag",
+                      "title": "Commit",
                       "short": true,
-                      "value": "${{ steps.tag.outputs.tag }}"
+                      "value": "${{ steps.tag.outputs.sha }}"
                     },
                     {
                       "title": "Message",
                       "short": false,
                       "value": "${{ github.event.head_commit.message }}"
+                    },
+                    {
+                      "title": "View on GitHub",
+                      "short": false,
+                      "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
                     }
                   ]
                 }
@@ -79,6 +84,17 @@ jobs:
           cache-from: type=registry,ref=${{ env.image_url }}:latest
           cache-to: type=inline
           ssh: default=${{ env.SSH_AUTH_SOCK }}
+      - id: slack
+        if: failed()
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
+        with:
+          channel-id: "C02EE9GUT2S" #deploy
+          payload: |
+            {
+              "text": "Failed to stage ${{ inputs.app }}"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   update-staging:
     runs-on: ubuntu-latest
@@ -108,7 +124,7 @@ jobs:
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
         with:
           channel-id: "C02EE9GUT2S" #deploy
-          update-ts: ${{ needs.build-and-push.outputs.msgid }}
+          #update-ts: ${{ needs.build-and-push.outputs.msgid }}
           payload: |
             {
               "text": "Staged ${{ inputs.app }}",
@@ -121,16 +137,6 @@ jobs:
                       "title": "Status",
                       "short": true,
                       "value": "${{ job.status }}"
-                    },
-                    {
-                      "title": "Tag",
-                      "short": true,
-                      "value": "${{ needs.build-and-push.outputs.tag }}"
-                    },
-                    {
-                      "title": "Message",
-                      "short": false,
-                      "value": "${{ github.event.head_commit.message }}"
                     }
                   ]
                 }
