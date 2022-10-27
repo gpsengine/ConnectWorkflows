@@ -45,10 +45,17 @@ on:
       - master
 
 jobs:
-	staging-push:
+  staging-push:
     uses: gpsengine/ConnectWorkflows/.github/workflows/staging-push.yaml@v1
     with:
       app: backend
     secrets: inherit
 ```
+
+
+# Development
+
+When working on this repo you can freely update `master` and use it from other workflows during development. When
+ready to release, create a release on GitHub which will push a tag in the form `v1.0.x`. The `update-tags` workflow
+will then run re-creating the `v1` tag so that other repos use the new code.
 
