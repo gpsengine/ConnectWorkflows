@@ -17,19 +17,21 @@ jobs:
       image_url: australia-southeast1-docker.pkg.dev/connect-staging-365310/connect/${{ inputs.app }}
     outputs:
       msgid: ${{ steps.slack.outputs.ts }}
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - name: Check out repository code
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3.1.0
       - name: Create build tag
+        id: tag
         run: |
-          echo "TAG=sha-$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+          echo "tag=sha-$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_OUTPUT
       - id: slack
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
         with:
           channel-id: "C02EE9GUT2S" #deploy
           payload: |
             {
-              "text": "Deploying ${{ inputs.app }} ${{ env.TAG }}",
+              "text": "Staging ${{ inputs.app }}...",
               "attachments": [
                 {
                   "pretext": "Deployment started",
@@ -39,6 +41,16 @@ jobs:
                       "title": "Status",
                       "short": true,
                       "value": "In Progress"
+                    },
+                    {
+                      "title": "Tag",
+                      "short": true,
+                      "value": "${{ steps.tag.outputs.tag }}"
+                    },
+                    {
+                      "title": "Message",
+                      "short": false,
+                      "value": "${{ github.event.head_commit.message }}"
                     }
                   ]
                 }
@@ -63,7 +75,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.image_url }}:${{ env.TAG }},${{ env.image_url }}:latest
+          tags: ${{ env.image_url }}:${{ steps.tag.outputs.tag }},${{ env.image_url }}:latest
           cache-from: type=registry,ref=${{ env.image_url }}:latest
           cache-to: type=inline
           ssh: default=${{ env.SSH_AUTH_SOCK }}
@@ -93,22 +105,32 @@ jobs:
       - run: git push
       - name: Update deployment message on slack
         if: always()
-        uses: slackapi/slack-github-action@v1.23.0
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
         with:
           channel-id: "C02EE9GUT2S" #deploy
           update-ts: ${{ needs.build-and-push.outputs.msgid }}
           payload: |
             {
-              "text": "Completed ${{ inputs.app }} ${{ env.TAG }}",
+              "text": "Staged ${{ inputs.app }}",
               "attachments": [
                 {
                   "pretext": "Deployment finished",
-                  "color": "28a745",
+                  "color": "${{ job.status == 'success' && '28a745' || 'a72845' }}",
                   "fields": [
                     {
                       "title": "Status",
                       "short": true,
-                      "value": "Completed"
+                      "value": "${{ job.status }}"
+                    },
+                    {
+                      "title": "Tag",
+                      "short": true,
+                      "value": "${{ needs.build-and-push.outputs.tag }}"
+                    },
+                    {
+                      "title": "Message",
+                      "short": false,
+                      "value": "${{ github.event.head_commit.message }}"
                     }
                   ]
                 }
