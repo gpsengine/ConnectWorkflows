@@ -84,8 +84,7 @@ jobs:
           cache-from: type=registry,ref=${{ env.image_url }}:latest
           cache-to: type=inline
           ssh: default=${{ env.SSH_AUTH_SOCK }}
-      - id: slack
-        if: failed()
+      - if: failed()
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
         with:
           channel-id: "C02EE9GUT2S" #deploy
