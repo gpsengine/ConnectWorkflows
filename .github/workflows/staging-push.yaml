@@ -40,7 +40,7 @@ jobs:
                     {
                       "title": "Ref",
                       "short": true,
-                      "value": "${{ github.refs }}"
+                      "value": "${{ github.ref }}"
                     },
                     {
                       "title": "Commit",
@@ -90,7 +90,7 @@ jobs:
           channel-id: "C02EE9GUT2S" #deploy
           payload: |
             {
-              "text": "Staging ${{ inputs.app }} status ${{ job.status }}"
+              "text": "Staging ${{ inputs.app }} ${{ job.status }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
