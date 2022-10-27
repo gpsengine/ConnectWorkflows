@@ -59,3 +59,5 @@ When working on this repo you can freely update `master` and use it from other w
 ready to release, create a release on GitHub which will push a tag in the form `v1.0.x`. The `update-tags` workflow
 will then run re-creating the `v1` tag so that other repos use the new code.
 
+Run `actionlint` before committing. (`brew install actionlint` if you don't have it).
+
