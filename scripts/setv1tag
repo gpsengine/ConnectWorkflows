@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+git tag -f -a v1
+git push -f --tags
