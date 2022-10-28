@@ -4,6 +4,9 @@ on:
       app:
         required: true
         type: string
+      angular:
+        required: false
+        type: boolean
 
 env:
   HOST: australia-southeast1-docker.pkg.dev
@@ -63,6 +66,21 @@ jobs:
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      # Optionally setup node and angular build
+      - uses: actions/setup-node@v2
+        if: inputs.angular
+        with:
+          node-version: 10
+          cache: npm
+      - name: Install / Refresh packages
+        if: inputs.angular
+        run: npm install
+      - name: ng build
+        if: inputs.angular
+        run: |
+          ./node_modules/.bin/ng build --prod
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325 #v2.2.1
       - name: Login to Google Container Registry
