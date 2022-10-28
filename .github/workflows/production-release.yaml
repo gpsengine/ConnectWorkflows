@@ -18,12 +18,37 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 #v3.1.0
-      - uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7 #v2.2.0
+      - uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
+        with:
+          channel-id: "C02EE9GUT2S" #deploy
+          payload: |
+            {
+              "text": "Releasing... ${{ inputs.app }} ${{ github.ref_name }}...",
+              "attachments": [
+                {
+                  "color": "dbab09",
+                  "fields": [
+                    {
+                      "title": "Title",
+                      "short": true,
+                      "value": "${{ github.event.release.name }}"
+                    },
+                    {
+                      "title": "Body",
+                      "short": false,
+                      "value": "${{ github.event.release.body }}"
+                    },
+                    {
+                      "title": "View on GitHub",
+                      "short": false,
+                      "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
         env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_CHANNEL: deploy
-          SLACK_TITLE: Building ${{ inputs.app }}...
-          SLACK_FOOTER: Sensium Labs
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8c0edbc76e98fa90f69d9a2c020dcb50019dc325 #v2.2.1
       - name: Login to Google Container Registry
@@ -45,6 +70,16 @@ jobs:
           cache-from: type=registry,ref=${{ env.image_url }}:latest
           cache-to: type=inline
           ssh: default=${{ env.SSH_AUTH_SOCK }}
+      - if: failure() || cancelled()
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
+        with:
+          channel-id: "C02EE9GUT2S" #deploy
+          payload: |
+            {
+              "text": "Releasing ${{ inputs.app }} ${{ job.status }}"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -68,12 +103,28 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
       - run: git commit -m "Update ${{ inputs.app }}"
       - run: git push
-      - uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7 #v2.2.0
+      - name: Update deployment message on slack
         if: always()
+        uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 #v1.23.0
+        with:
+          channel-id: "C02EE9GUT2S" #deploy
+          payload: |
+            {
+              "text": "Released ${{ inputs.app }} ${{ github.ref_name }}",
+              "attachments": [
+                {
+                  "color": "${{ job.status == 'success' && '28a745' || 'a72845' }}",
+                  "fields": [
+                    {
+                      "title": "Status",
+                      "short": true,
+                      "value": "${{ job.status }}"
+                    }
+                  ]
+                }
+              ]
+            }
         env:
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_CHANNEL: deploy
-          SLACK_TITLE: ${{ inputs.app }} Complete
-          SLACK_FOOTER: Sensium Labs
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN}}
+
 

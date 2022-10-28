@@ -61,3 +61,7 @@ will then run re-creating the `v1` tag so that other repos use the new code.
 
 Run `actionlint` before committing. (`brew install actionlint` if you don't have it).
 
+## Consider
+
+https://stackoverflow.com/questions/72175613/is-there-a-variable-in-github-actions-that-holds-the-total-duration-of-a-workflo
+
